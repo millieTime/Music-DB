@@ -1,6 +1,7 @@
 # Specific files I want safe.
 Base_Readme.md
 songs.txt
+cert.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
