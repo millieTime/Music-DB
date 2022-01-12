@@ -1,3 +1,7 @@
+# Specific files I want safe.
+Base_Readme.md
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
