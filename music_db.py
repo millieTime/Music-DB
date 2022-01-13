@@ -57,13 +57,14 @@ def get_matches(db, song_info):
         song_collection = song_collection.where(u"album", u"==", song_info.album)
     if song_info.name:
         song_collection = song_collection.where(u"name", u"==", song_info.name)
-    # Will likely have to do some processing here.
+    
     song_docs = [*song_collection.get()]
     if not song_docs:
         print("No matches found")
     return song_docs
 
 def edit_song(db, search_song_info, updated_song_info):
+    # Edits a song's info
     matches = get_matches(db, search_song_info)
     if len(matches) == 0:
         print("Cannot update nonexistent song.")
@@ -82,6 +83,7 @@ def edit_song(db, search_song_info, updated_song_info):
         print("Successfully updated song info.")
         
 def remove_song(db, search_song_info):
+    # Removes a song (or songs) from the database.
     matches = get_matches(db, search_song_info)
     if len(matches) == 0:
         print("No such song exists.")
@@ -110,11 +112,11 @@ def main():
     while selection != 7:
         print("Select an option")
         print("\t1: View songs")
-        print("\t2: View specific songs")
+        print("\t2: View specific song(s)")
         print("\t3: Add default song")
         print("\t4: Add song")
         print("\t5: Edit song")
-        print("\t6: Remove song")
+        print("\t6: Remove song(s)")
         print("\t7: Exit")
         selection = input(">")
 

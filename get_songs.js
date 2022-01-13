@@ -2,13 +2,12 @@
 Copy it, open your profile => thumbs.
 Inspect Element => console
 Paste the script in the console at the bottom.
+THIS HAS BEEN EDITED FOR MY NEEDS.
+TO VIEW THE ORIGINAL, VISIT https://pastebin.com/9br3VZjX
 */
 (function() {
     var pageSize = 100;
     var stationPageSize = 250; // IMPORTANT: This script only gets the first page of stations. If you have more than 250 this may be a problem, sorry.
-    var webname = location.pathname.split("/").pop(); // Seems to be a variation of the username, can be retrieved from the URL
-    var includeThumbsDown = true;
-
     var allThumbs = [];
 
     // Step one, obtain the AuthToken and CsrfToken which will allow us to make requests to the Pandora API.
@@ -59,7 +58,7 @@ Paste the script in the console at the bottom.
             currentStationId++;
             if(currentStationId < stations.length) {
                 console.log("Getting tracks for station", currentStationId+1, "of", stations.length);
-                fetchPage(stations[currentStationId], true, 0, callback);
+                fetchPage(stations[currentStationId], 0, callback);
             } else {
                 finalize();
             }
@@ -67,8 +66,7 @@ Paste the script in the console at the bottom.
         var currentStationId = -1;
         callback();
     };
-    
-    function fetchPage(stationId, positive, pageNumber, callback) {
+    function fetchPage(stationId, pageNumber, callback) {
         var req = new XMLHttpRequest();
         req.open('POST', "/api/v1/station/getStationFeedback", true);
         req.setRequestHeader("Content-Type", "application/json"); // Pandora API rejects requests without this content type set
@@ -77,25 +75,18 @@ Paste the script in the console at the bottom.
         req.onreadystatechange = function() {
             if(req.readyState == XMLHttpRequest.DONE && req.status == 200) {
                 var data = JSON.parse(req.responseText);
-                data.feedback = data.feedback.map(function(item) {
-                    item.type = item.isPositive ? "Thumbs Up" : "Thumbs Down";
-                    return item;
-                });
+                //data.feedback = data.feedback.filter(item => item.isPositive);
                 allThumbs = allThumbs.concat(data.feedback);
                 if(data.feedback.length > 0) {
-                    fetchPage(stationId, positive, pageNumber+1, callback);
+                    fetchPage(stationId, pageNumber+1, callback);
                 } else {
-                    if(positive && includeThumbsDown) {
-                        fetchPage(stationId, false, 0, callback);
-                    } else {
-                        callback();
-                    }
+                    callback();
                 }
             }
         };
         req.send(JSON.stringify({
             pageSize: pageSize,
-            positive: positive,
+            positive: true,
             startIndex: pageNumber * pageSize,
             stationId: stationId
         }));
@@ -111,7 +102,6 @@ Paste the script in the console at the bottom.
                 thumb.albumTitle.replace(/\t/g, "    ").replace(/\n|\r/g, "") + "\t" +
                 thumb.songTitle.replace(/\t/g, "    ").replace(/\n|\r/g, "") + "\t" +
                 thumb.stationName.replace(/\t/g, "    ").replace(/\n|\r/g, "") + "\t" +
-                thumb.type + "\t" +
                 thumb.amazonUrl + "\t" +
                 thumb.itunesUrl + "\t" +
                 thumb.discNum + "\t" +
