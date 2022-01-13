@@ -75,7 +75,6 @@ TO VIEW THE ORIGINAL, VISIT https://pastebin.com/9br3VZjX
         req.onreadystatechange = function() {
             if(req.readyState == XMLHttpRequest.DONE && req.status == 200) {
                 var data = JSON.parse(req.responseText);
-                //data.feedback = data.feedback.filter(item => item.isPositive);
                 allThumbs = allThumbs.concat(data.feedback);
                 if(data.feedback.length > 0) {
                     fetchPage(stationId, pageNumber+1, callback);
@@ -94,7 +93,7 @@ TO VIEW THE ORIGINAL, VISIT https://pastebin.com/9br3VZjX
 
     // Step four, compile the output
     function finalize() {
-        var string = "Artist\tAlbum\tSong\tStation\tType\tAmazon Link\tiTunes Link\tDisc Number\tTrack Number\tDuration (Seconds)";
+        var string = "Artist\tAlbum\tSong\tStation\tDuration (Seconds)";
         for(var i = 0; i < allThumbs.length; i++) {
             var thumb = allThumbs[i];
             string += "\n" +
@@ -102,10 +101,6 @@ TO VIEW THE ORIGINAL, VISIT https://pastebin.com/9br3VZjX
                 thumb.albumTitle.replace(/\t/g, "    ").replace(/\n|\r/g, "") + "\t" +
                 thumb.songTitle.replace(/\t/g, "    ").replace(/\n|\r/g, "") + "\t" +
                 thumb.stationName.replace(/\t/g, "    ").replace(/\n|\r/g, "") + "\t" +
-                thumb.amazonUrl + "\t" +
-                thumb.itunesUrl + "\t" +
-                thumb.discNum + "\t" +
-                thumb.trackNum + "\t" +
                 thumb.trackLength;
         }
         console.log(string);
