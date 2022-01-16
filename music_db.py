@@ -1,6 +1,4 @@
 from pathlib import Path
-import re
-from threading import local
 from db_interactor import DB_Interactor
 from song_info import SongInfo
 # Gets the current directory
