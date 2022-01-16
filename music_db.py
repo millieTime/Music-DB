@@ -12,7 +12,7 @@ STATIONS_OF_INTEREST = ["Seven Lions Radio",
                         "Turbo Penguin Radio",
                         "The Glitch Mob Radio",
                         "GameChops & Holder Radio"]
-SONG_FILE_NAME = "songs.txt"
+CERT_FILE_PATH = DIR + "\\" + "cert.json" ##### REPLACE WITH YOUR ADMIN SDK CERT FILENAME.
 
 def view_songs(db_interactor):
     # Display all songs.
@@ -31,21 +31,6 @@ def add_song(db_interactor):
     song_info = SongInfo()
     song_info.build_song_info()
     db_interactor.add_song(song_info)
-
-def bin_search(lst, item):
-    i = 0
-    j = len(lst)
-    while i < j:
-        mid = (i + j) // 2
-        if lst[mid] == item:
-            print("Found!")
-            return mid
-        elif lst[mid] < item:
-            i = mid + 1
-        else:
-            j = mid
-    print("not found.")
-    return -1
 
 def insert_song(song, lst):
     # Insert a song_info item into a list of song_infos alphabetically.
@@ -120,11 +105,11 @@ def sync_with_file(db_interactor):
             db_interactor.remove_song(remote_song_info_list[remote_index])
             remote_index += 1
     while local_index < len(local_song_info_list):
-        # Still need to add some songs to the remote database.
+        # Add any remaining songs to the remote database.
         db_interactor.add_song(local_song_info_list[local_index])
         local_index += 1
     while remote_index < len(remote_song_info_list):
-        # Still need to remove some songs from the remote database.
+        # Remove any remaining songs from the remote database.
         db_interactor.remove_song(remote_song_info_list[remote_index])
         remote_index += 1
 
@@ -164,11 +149,12 @@ def get_user_request(options):
     return int(selection)
 
 def main():
-    cert_file_path = DIR + "\\" + "cert.json" ##### REPLACE WITH YOUR ADMIN SDK CERT FILENAME.
-    db_interactor = DB_Interactor(cert_file_path)
+    # Set up the database interactor.
+    db_interactor = DB_Interactor(CERT_FILE_PATH)
     if not db_interactor.is_ready():
         return
 
+    # Set up the menu options.
     option_list = [
         "View songs",
         "View specific song(s)",
@@ -187,12 +173,11 @@ def main():
         remove_song,
     ]
 
+    # Interact with the user.
     selection = get_user_request(option_list)
     while selection != len(option_list):
-
         # User has made their choice, call the function!
         function_list[selection - 1](db_interactor)
-
         # Ask what they want to do now.
         selection = get_user_request(option_list)
     

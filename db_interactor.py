@@ -1,4 +1,4 @@
-# used to interact with Firebase.
+# Used to interact with Firebase.
 import firebase_admin
 from firebase_admin import credentials, firestore
 # Get current directory. Helps for file access.
@@ -42,7 +42,7 @@ class DB_Interactor():
                 print("{:>50.50}  {:>36.36}  {:>40.40} {:^8} {:>6}".format(*[entry[key] for key in keys]))
 
     def get_all_songs(self, display = False):
-        # Gets all song documents in the database.
+        # Gets all song documents in the database, in alphabetical order.
         song_collection = self.__db.collection(PANDORA_COLLECTION_NAME)
         song_docs = [*song_collection.order_by(u"name").order_by(u"artist").get()]
         if not song_docs:
@@ -81,8 +81,12 @@ class DB_Interactor():
         if len(matches) == 0:
             print("Couldn't update.")
         elif len(matches) > 1:
-            print("Too many matches:")
+            print("More than one match exists")
             self.display_doc_list(matches)
+            if input("Update all (y/n)? ") == "y":
+                for song in matches:
+                    song_id = song.id
+                    self.__db.collection(PANDORA_COLLECTION_NAME).document(song_id).update({u'owned_status': owned})
         else:
             song_id = matches[0].id
             self.__db.collection(PANDORA_COLLECTION_NAME).document(song_id).update({u'owned_status': owned})

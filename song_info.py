@@ -5,7 +5,7 @@ class SongInfo():
 
     def __init__(self, name = "", album = "", artist = "", duration = "", owned_status = "", info_dict = None):
         # Initializes the SongInfo object with specified values.
-        # Note, specified values will override values in info_dict.
+        # Note, specified values will override values in info_dict, if provided.
         self.__data_dict = {
             "name":         name         or (info_dict.get("name") if info_dict else ""),
             "album":        album        or (info_dict.get("album") if info_dict else ""),
