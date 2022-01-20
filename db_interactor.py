@@ -6,10 +6,10 @@ from pathlib import Path
 # Gets the current directory
 DIR = str(Path(__file__).resolve().parent)
 
-# This is the name of my top-level collection in Firestore.
-PANDORA_COLLECTION_NAME = u"Pandora Song Info"
-
 class DB_Interactor():
+    # These are the names of my top-level collections in Firestore.
+    PANDORA_COLLECTION = u"Pandora Song Info"
+    OWNED_COLLECTION = u"Owned Song Info"
     __db = None
 
     def __init__(self, filepath):
@@ -37,13 +37,13 @@ class DB_Interactor():
             # Print header
             keys = ["name", "artist", "album", "duration", "owned_status"]
             print("{:>50}  {:>36}  {:>40} {:>8} {}".format(*keys))
-            # Print songs.
+            # Print songs. Use .get in case a field is missing.
             for entry in dict_list:
-                print("{:>50.50}  {:>36.36}  {:>40.40} {:^8} {:>6}".format(*[entry[key] for key in keys]))
+                print("{:>50.50}  {:>36.36}  {:>40.40} {:^8} {:>6}".format(*[entry.get(key) or "" for key in keys]))
 
-    def get_all_songs(self, display = False):
+    def get_all_songs(self, collection_name, display = False):
         # Gets all song documents in the database, in alphabetical order.
-        song_collection = self.__db.collection(PANDORA_COLLECTION_NAME)
+        song_collection = self.__db.collection(collection_name)
         song_docs = [*song_collection.order_by(u"name").order_by(u"artist").get()]
         if not song_docs:
             print("No songs found")
@@ -51,13 +51,13 @@ class DB_Interactor():
             self.display_doc_list(song_docs)
         return song_docs
 
-    def get_songs_that_match(self, song_info, display = False):
+    def get_songs_that_match(self, song_info, collection_name, display = False):
         # Gets song documents that match the given song info from the database.
         if song_info.is_empty():
             # Nothing to filter by, just return all of them.
-            return self.get_all_songs(display)
+            return self.get_all_songs(collection_name, display)
         
-        song_collection = self.__db.collection(PANDORA_COLLECTION_NAME)
+        song_collection = self.__db.collection(collection_name)
         for key in song_info.get_keys():
             val = song_info.get(key)
             if val:
@@ -70,14 +70,14 @@ class DB_Interactor():
             self.display_doc_list(song_docs)
         return song_docs
 
-    def add_song(self, song_info):
+    def add_song(self, song_info, collection_name):
         # Adds a song to the database.
-        self.__db.collection(PANDORA_COLLECTION_NAME).add(song_info.get_data_dict())
+        self.__db.collection(collection_name).add(song_info.get_data_dict())
 
     def edit_owned(self, search_info, owned):
         # Updates whether I own a song. 'owned' must be "T" or "F".
         assert(owned in ["T", "F"])
-        matches = self.get_songs_that_match(search_info)
+        matches = self.get_songs_that_match(search_info, DB_Interactor.PANDORA_COLLECTION)
         if len(matches) == 0:
             print("Couldn't update.")
         elif len(matches) > 1:
@@ -86,15 +86,15 @@ class DB_Interactor():
             if input("Update all (y/n)? ") == "y":
                 for song in matches:
                     song_id = song.id
-                    self.__db.collection(PANDORA_COLLECTION_NAME).document(song_id).update({u'owned_status': owned})
+                    self.__db.collection(DB_Interactor.PANDORA_COLLECTION).document(song_id).update({u'owned_status': owned})
         else:
             song_id = matches[0].id
-            self.__db.collection(PANDORA_COLLECTION_NAME).document(song_id).update({u'owned_status': owned})
+            self.__db.collection(DB_Interactor.PANDORA_COLLECTION).document(song_id).update({u'owned_status': owned})
             print("Successfully updated owned status.")
 
-    def remove_song(self, search_info):
+    def remove_song(self, search_info, collection_name):
         # Removes a song (or songs) from the database.
-        matches = self.get_songs_that_match(search_info)
+        matches = self.get_songs_that_match(search_info, collection_name)
         if len(matches) == 0:
             print("Can't delete.")
         elif len(matches) > 1:
@@ -103,7 +103,7 @@ class DB_Interactor():
             if input("Delete all (y/n)? ") == "y":
                 for song in matches:
                     song_id = song.id
-                    self.__db.collection(PANDORA_COLLECTION_NAME).document(song_id).delete()
+                    self.__db.collection(collection_name).document(song_id).delete()
         else:
             song_id = matches[0].id
-            self.__db.collection(PANDORA_COLLECTION_NAME).document(song_id).delete()
+            self.__db.collection(collection_name).document(song_id).delete()

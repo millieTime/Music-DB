@@ -19,12 +19,13 @@ This project uses a Firestore Firebase database named My Music DB.
 
 ## Development Environment
 
-This project uses Python 3.8.7 and the pip package firebase-admin 5.0.3.
+This project uses Python 3.8.7 and the pip packages firebase-admin 5.0.3 and mutagen 1.45.1.
 
 ## Useful Websites
 
 * [Firebase Docs](https://firebase.google.com/docs/guides)
 * [Javascript to get a list of liked Pandora songs](https://pastebin.com/9br3VZjX)
+* [Mutagen Docs](https://mutagen.readthedocs.io/en/latest/)
 
 ## Future Work
 

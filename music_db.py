@@ -1,6 +1,7 @@
 from pathlib import Path
-from db_interactor import DB_Interactor
+from db_interactor import DB_Interactor as DBI
 from song_info import SongInfo
+from handle_files import folder_to_file_list, file_to_SongInfo
 # Gets the current directory
 DIR = str(Path(__file__).resolve().parent)
 
@@ -13,22 +14,43 @@ STATIONS_OF_INTEREST = ["Seven Lions Radio",
 CERT_FILE_PATH = DIR + "\\" + "cert.json" ##### REPLACE WITH YOUR ADMIN SDK CERT FILENAME.
 
 def view_songs(db_interactor):
-    # Display all songs.
-    db_interactor.get_all_songs(True)
+    # Display all songs in the chosen collection.
+    user_choice = input("View owned (o) or pandora (p) songs? ")
+    if user_choice != "o" and user_choice != "p":
+        print("Invalid input, returning to menu. . .")
+        return
+    if user_choice == "o":
+        db_interactor.get_all_songs(DBI.OWNED_COLLECTION, True)
+    else: #user_choice == "p"
+        db_interactor.get_all_songs(DBI.PANDORA_COLLECTION, True)
 
 def view_certain_songs(db_interactor):
-    # Display songs that match user-entered info.
+    # Display songs that match user-entered info in the chosen collection.
+    user_choice = input("View from owned (o) or pandora (p) songs? ")
+    if user_choice != "o" and user_choice != "p":
+        print("Invalid input, returning to menu. . .")
+        return
     print("Enter the information of the song(s) to search for.")
     song_info = SongInfo()
     song_info.build_song_info()
-    db_interactor.get_songs_that_match(song_info, True)
+    if user_choice == "o":
+        db_interactor.get_songs_that_match(song_info, DBI.OWNED_COLLECTION, True)
+    else: #if user_choice == "p":
+        db_interactor.get_songs_that_match(song_info, DBI.PANDORA_COLLECTION, True)
 
 def add_song(db_interactor):
-    # Add a song to the database based on user-entered info.
+    # Add a song to the chosen collection based on user-entered info.
+    user_choice = input("Add to owned (o) or pandora (p) songs? ")
+    if user_choice != "o" and user_choice != "p":
+        print("Invalid input, returning to menu. . .")
+        return
     print("Enter the information of the song to add.")
     song_info = SongInfo()
     song_info.build_song_info()
-    db_interactor.add_song(song_info)
+    if user_choice == "o":
+        db_interactor.add_song(song_info, DBI.OWNED_COLLECTION)
+    else: #if user_choice == "p":
+        db_interactor.add_song(song_info, DBI.PANDORA_COLLECTION)
 
 def insert_song(song, lst):
     # Insert a song_info item into a list of song_infos alphabetically.
@@ -50,12 +72,11 @@ def insert_song(song, lst):
         lst[up], lst[-1] = lst[-1], lst[up]
         up += 1
 
-
 def sync_with_file(db_interactor):
-    # Add all songs in a tab-spaced file to the database.
+    # Add all songs in a tab-spaced file to the Pandora collection.
 
-    ### STEP 1: Get songs from the database.
-    remote_doc_list = db_interactor.get_all_songs()
+    ### STEP 1: Get songs from the Pandora collection.
+    remote_doc_list = db_interactor.get_all_songs(DBI.PANDORA_COLLECTION)
     remote_song_info_list = [SongInfo(info_dict = doc.to_dict()) for doc in remote_doc_list]
 
     ### STEP 2: Get songs from the file.
@@ -65,7 +86,7 @@ def sync_with_file(db_interactor):
         with open(file_name, "r") as song_file:
             # Skip the header line.
             next(song_file)
-            # Read file info and add to database.
+            # Read file info and add to Pandora collection.
             for line in song_file.readlines()[1:]:
                 # Take off the \n and split at tabs.
                 line_data = line[:-1].split("\t")
@@ -86,7 +107,7 @@ def sync_with_file(db_interactor):
         print("Unable to load songs from file, returning to menu.")
         return
     
-    ### STEP 3: Compare local song to remote list.
+    ### STEP 3: Compare local songs to remote list.
     local_index = 0
     remote_index = 0
     while local_index < len(local_song_info_list) and remote_index < len(remote_song_info_list):
@@ -96,19 +117,19 @@ def sync_with_file(db_interactor):
             remote_index += 1
         elif local_song_info_list[local_index] < remote_song_info_list[remote_index]:
             # Remote missing a song, need to add a local song to the remote database.
-            db_interactor.add_song(local_song_info_list[local_index])
+            db_interactor.add_song(local_song_info_list[local_index], DBI.PANDORA_COLLECTION)
             local_index += 1
         else:
             # Remote has an extra song, need to remove a remote song from the remote database.
-            db_interactor.remove_song(remote_song_info_list[remote_index])
+            db_interactor.remove_song(remote_song_info_list[remote_index], DBI.PANDORA_COLLECTION)
             remote_index += 1
     while local_index < len(local_song_info_list):
         # Add any remaining songs to the remote database.
-        db_interactor.add_song(local_song_info_list[local_index])
+        db_interactor.add_song(local_song_info_list[local_index], DBI.PANDORA_COLLECTION)
         local_index += 1
     while remote_index < len(remote_song_info_list):
         # Remove any remaining songs from the remote database.
-        db_interactor.remove_song(remote_song_info_list[remote_index])
+        db_interactor.remove_song(remote_song_info_list[remote_index], DBI.PANDORA_COLLECTION)
         remote_index += 1
 
     print("Successfully updated remote database.")
@@ -126,11 +147,57 @@ def edit_owned(db_interactor):
 
 def remove_song(db_interactor):
     # Remove a song or songs.
+    user_choice = input("Remove from owned (o) or pandora (p) songs? ")
+    if user_choice != "o" and user_choice != "p":
+        print("Invalid input, returning to menu. . .")
+        return
     print("Enter the information of the song(s) to search for.")
     song_info = SongInfo()
     song_info.build_song_info()
-    db_interactor.remove_song(song_info)
+    if user_choice == "o":
+        db_interactor.remove_song(song_info, DBI.OWNED_COLLECTION)
+    elif user_choice == "p":
+        db_interactor.remove_song(song_info, DBI.PANDORA_COLLECTION)
 
+def sync_owned_music(db_interactor):
+    # Updates the owned music database to match all mp3s and wavs in the specified folder and subfolders.
+    ### STEP 1: Get songs from the Owned collection.
+    remote_doc_list = db_interactor.get_all_songs(DBI.OWNED_COLLECTION)
+    remote_song_info_list = [SongInfo(info_dict = doc.to_dict()) for doc in remote_doc_list]
+
+    ### STEP 2: Get songs from the local folder.
+    folder_path = input("Enter the complete path to the folder of music to synchronize with: ")
+    file_list = folder_to_file_list(folder_path)
+    print("Successfully scraped folder, found", len(file_list), "songs.")
+    local_song_info_list = []
+    for file in file_list:
+        song_info = file_to_SongInfo(file)
+        insert_song(song_info, local_song_info_list)
+    
+    ### STEP 4: Add to the remote database any songs it's missing.
+    # I assume I will not lose music over time, but that it will continue to grow.
+    # Liked songs can disappear, which is why it is valid to remove them from
+    # the remote database on sync.
+    local_index = 0
+    remote_index = 0
+    while local_index < len(local_song_info_list) and remote_index < len(remote_song_info_list):
+        if local_song_info_list[local_index] == remote_song_info_list[remote_index]:
+            # Existed in both spaces, next.
+            local_index += 1
+            remote_index += 1
+        elif local_song_info_list[local_index] < remote_song_info_list[remote_index]:
+            # Remote missing a song, need to add a local song to the remote database.
+            db_interactor.add_song(local_song_info_list[local_index], DBI.OWNED_COLLECTION)
+            local_index += 1
+        else:
+            # Remote has an extra song, but we don't care.
+            remote_index += 1
+    while local_index < len(local_song_info_list):
+        # Add any remaining songs to the remote database.
+        db_interactor.add_song(local_song_info_list[local_index], DBI.OWNED_COLLECTION)
+        local_index += 1
+    print("Successfully added songs to remote database.")
+    
 def get_user_request(options):
     # Figure out what the user wants to do from the list of options.
     print("\nSelect an option")
@@ -148,7 +215,7 @@ def get_user_request(options):
 
 def main():
     # Set up the database interactor.
-    db_interactor = DB_Interactor(CERT_FILE_PATH)
+    db_interactor = DBI(CERT_FILE_PATH)
     if not db_interactor.is_ready():
         return
 
@@ -157,9 +224,10 @@ def main():
         "View songs",
         "View specific song(s)",
         "Add song",
-        "Sync songs with file",
+        "Sync Pandora songs with file",
         "Edit owned status",
         "Remove song(s)",
+        "Sync owned music",
         "Exit", # Does not line up with a function, because it needs no function.
     ]
     function_list = [
@@ -169,6 +237,7 @@ def main():
         sync_with_file,
         edit_owned,
         remove_song,
+        sync_owned_music
     ]
 
     # Interact with the user.
