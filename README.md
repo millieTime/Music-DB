@@ -21,7 +21,7 @@ To sync the songs you've liked on Pandora, you'll need to have the .txt file in 
 To sync the songs you own, you'll need to provide the complete path to the folder that contains all the music you have downloaded. Currently, only .wav files following a specific naming convention (author - album - name.wav) and .mp3 files are accepted.
 
 **Here is a demonstration video of the program:**
-[Software Demo Video](http://youtube.link.goes.here)
+[Software Demo Video](https://youtu.be/hmGcvTf1F94)
 ## File Descriptions
 
 * get_songs.js - A js script from pastebin.com that will gather all info on liked and disliked songs. To use, navigate to Pandora -> profile -> thumbs up. Open the console via right-click -> Inspect Element -> console. Paste this script in the console and hit enter. After several seconds of processing a message will be printed contianing tab-delimited information on all your liked and disliked songs. Save it to a .txt file in the same directory as music_db.py.
