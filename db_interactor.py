@@ -90,7 +90,6 @@ class DB_Interactor():
         else:
             song_id = matches[0].id
             self.__db.collection(DB_Interactor.PANDORA_COLLECTION).document(song_id).update({u'owned_status': owned})
-            print("Successfully updated owned status.")
 
     def remove_song(self, search_info, collection_name):
         # Removes a song (or songs) from the database.

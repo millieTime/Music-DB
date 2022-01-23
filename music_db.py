@@ -72,9 +72,36 @@ def insert_song(song, lst):
         lst[up], lst[-1] = lst[-1], lst[up]
         up += 1
 
+def get_diffs(remote_song_info_list, local_song_info_list):
+    # Looks through two alphabetical lists of SongInfo. Returns two lists noting differences.
+    # The first list contains songs the remote list is missing.
+    # The local list contains songs the local list is missing.
+    remote_missing = []
+    local_missing = []
+    remote_index = 0
+    local_index = 0
+    while remote_index < len(remote_song_info_list) and local_index < len(local_song_info_list):
+        if remote_song_info_list[remote_index] == local_song_info_list[local_index]:
+            # Existed in both spaces, next.
+            local_index += 1
+            remote_index += 1
+        elif remote_song_info_list[remote_index] > local_song_info_list[local_index]:
+            # Remote list is missing a song.
+            remote_missing.append(local_song_info_list[local_index])
+            local_index += 1
+        else:
+            # Local list is missing a song.
+            local_missing.append(remote_song_info_list[remote_index])
+            remote_index += 1
+    # Collect all remaining songs the remote list is missing.
+    remote_missing += local_song_info_list[local_index:]
+    # Collect all remaining songs the local list is missing.
+    local_missing += remote_song_info_list[remote_index:]
+
+    return remote_missing, local_missing
+
 def sync_with_file(db_interactor):
     # Add all songs in a tab-spaced file to the Pandora collection.
-
     ### STEP 1: Get songs from the Pandora collection.
     remote_doc_list = db_interactor.get_all_songs(DBI.PANDORA_COLLECTION)
     remote_song_info_list = [SongInfo(info_dict = doc.to_dict()) for doc in remote_doc_list]
@@ -85,8 +112,6 @@ def sync_with_file(db_interactor):
     try:
         with open(file_name, "r") as song_file:
             # Skip the header line.
-            next(song_file)
-            # Read file info and add to Pandora collection.
             for line in song_file.readlines()[1:]:
                 # Take off the \n and split at tabs.
                 line_data = line[:-1].split("\t")
@@ -108,30 +133,11 @@ def sync_with_file(db_interactor):
         return
     
     ### STEP 3: Compare local songs to remote list.
-    local_index = 0
-    remote_index = 0
-    while local_index < len(local_song_info_list) and remote_index < len(remote_song_info_list):
-        if local_song_info_list[local_index] == remote_song_info_list[remote_index]:
-            # Existed in both spaces, next.
-            local_index += 1
-            remote_index += 1
-        elif local_song_info_list[local_index] < remote_song_info_list[remote_index]:
-            # Remote missing a song, need to add a local song to the remote database.
-            db_interactor.add_song(local_song_info_list[local_index], DBI.PANDORA_COLLECTION)
-            local_index += 1
-        else:
-            # Remote has an extra song, need to remove a remote song from the remote database.
-            db_interactor.remove_song(remote_song_info_list[remote_index], DBI.PANDORA_COLLECTION)
-            remote_index += 1
-    while local_index < len(local_song_info_list):
-        # Add any remaining songs to the remote database.
-        db_interactor.add_song(local_song_info_list[local_index], DBI.PANDORA_COLLECTION)
-        local_index += 1
-    while remote_index < len(remote_song_info_list):
-        # Remove any remaining songs from the remote database.
-        db_interactor.remove_song(remote_song_info_list[remote_index], DBI.PANDORA_COLLECTION)
-        remote_index += 1
-
+    remote_missing, local_missing = get_diffs(remote_song_info_list, local_song_info_list)
+    for song_info in remote_missing:
+        db_interactor.add_song(song_info, DBI.PANDORA_COLLECTION)
+    for song_info in local_missing:
+        db_interactor.remove_song(song_info, DBI.PANDORA_COLLECTION)
     print("Successfully updated remote database.")
 
 def edit_owned(db_interactor):
@@ -159,7 +165,7 @@ def remove_song(db_interactor):
     elif user_choice == "p":
         db_interactor.remove_song(song_info, DBI.PANDORA_COLLECTION)
 
-def sync_owned_music(db_interactor):
+def sync_owned_songs(db_interactor):
     # Updates the owned music database to match all mp3s and wavs in the specified folder and subfolders.
     ### STEP 1: Get songs from the Owned collection.
     remote_doc_list = db_interactor.get_all_songs(DBI.OWNED_COLLECTION)
@@ -174,29 +180,21 @@ def sync_owned_music(db_interactor):
         song_info = file_to_SongInfo(file)
         insert_song(song_info, local_song_info_list)
     
-    ### STEP 4: Add to the remote database any songs it's missing.
+    ### STEP 3: Add to the Owned collection any songs it's missing.
     # I assume I will not lose music over time, but that it will continue to grow.
     # Liked songs can disappear, which is why it is valid to remove them from
-    # the remote database on sync.
-    local_index = 0
-    remote_index = 0
-    while local_index < len(local_song_info_list) and remote_index < len(remote_song_info_list):
-        if local_song_info_list[local_index] == remote_song_info_list[remote_index]:
-            # Existed in both spaces, next.
-            local_index += 1
-            remote_index += 1
-        elif local_song_info_list[local_index] < remote_song_info_list[remote_index]:
-            # Remote missing a song, need to add a local song to the remote database.
-            db_interactor.add_song(local_song_info_list[local_index], DBI.OWNED_COLLECTION)
-            local_index += 1
-        else:
-            # Remote has an extra song, but we don't care.
-            remote_index += 1
-    while local_index < len(local_song_info_list):
-        # Add any remaining songs to the remote database.
-        db_interactor.add_song(local_song_info_list[local_index], DBI.OWNED_COLLECTION)
-        local_index += 1
+    # the Pandora collection on sync.
+    remote_missing, _ = get_diffs(remote_song_info_list, local_song_info_list)
+    for song_info in remote_missing:
+        db_interactor.add_song(song_info, DBI.OWNED_COLLECTION)
     print("Successfully added songs to remote database.")
+    
+    ### STEP 4: Update the owned status of the Pandora collection.
+    pass
+    
+
+def get_unowned_songs(db_interactor):
+    pass
     
 def get_user_request(options):
     # Figure out what the user wants to do from the list of options.
@@ -227,7 +225,8 @@ def main():
         "Sync Pandora songs with file",
         "Edit owned status",
         "Remove song(s)",
-        "Sync owned music",
+        "Sync owned songs",
+        #"View unowned songs",
         "Exit", # Does not line up with a function, because it needs no function.
     ]
     function_list = [
@@ -237,7 +236,7 @@ def main():
         sync_with_file,
         edit_owned,
         remove_song,
-        sync_owned_music
+        sync_owned_songs
     ]
 
     # Interact with the user.
